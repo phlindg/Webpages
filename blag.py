@@ -4,6 +4,8 @@ import random
 import hashlib
 import hmac
 from string import letters
+import urllib2
+from xml.dom import minidom
 
 import webapp2
 import jinja2
@@ -15,6 +17,27 @@ jinja_env = jinja2.Environment(loader = jinja2.FileSystemLoader(template_dir),
                                autoescape = True)
 
 secret = 'awoop'
+IP_URL="http://api.hostip.info/?ip="
+
+GMAPS_URL = "http://maps.googleapis.com/maps/api/staticmap?size=380x263&sensor=false&"
+def gmaps_img(points):
+    markers="&".join("markers=%s,%s"%(p.lat, p.lon)
+             for p in points)
+    return GMAPS_URL + markers
+
+def get_coords(ip):
+    url = IP_URL + ip
+    content = None
+    try:
+        content = urllib2.urlopen(url).read()
+    except URLError:
+        return
+    if content:
+        d = minidom.parseString(content)
+        coords = d.getElementsByTagName("gml:coordinates")
+        if coords and coords[0].childnotes[0].nodeValue:
+            lon, lat = coords[0].childnoted[0].nodeValue.split(",")
+            return db.GeoPt(lat ,lon)
 
 def render_str(template, **params):
     t = jinja_env.get_template(template)
@@ -55,7 +78,7 @@ class BlogHandler(webapp2.RequestHandler):
     def logout(self):
         self.response.headers.add_header('Set-Cookie', 'user_id=; Path=/')
 
-    def initialize(self, *a, **kw): ##Denna kollar om usern är inloggad varenda gång den gör ngt.
+    def initialize(self, *a, **kw): ##Denna kollar om usern e inloggad varenda gong den gor ngt.
         webapp2.RequestHandler.initialize(self, *a, **kw)
         uid = self.read_secure_cookie('user_id')
         self.user = uid and User.by_id(int(uid))
@@ -66,7 +89,7 @@ def render_post(response, post):
 
 class MainPage(BlogHandler):
   def get(self):
-      self.write('Hello, Udacity!')
+      self.redirect("/blog")
 
 
 ##### user stuff
@@ -83,7 +106,7 @@ def valid_pw(name, password, h):
     salt = h.split(',')[0]
     return h == make_pw_hash(name, password, salt)
 
-def users_key(group = 'default'):#Denna skapar objektet som storar alla våra users
+def users_key(group = 'default'):#Denna skapar objektet som storar alla users
     return db.Key.from_path('users', group)
 
 class User(db.Model):
@@ -98,7 +121,7 @@ class User(db.Model):
     @classmethod
     def by_name(cls, name):
         u = User.all().filter('name =', name).get()
-        #Denna säger egentligen SELECT * FROM users WHERE name=name
+        #Denna seger egentligen SELECT * FROM users WHERE name=name
         return u
 
     @classmethod
@@ -126,6 +149,7 @@ class Post(db.Model):
     content = db.TextProperty(required = True)
     created = db.DateTimeProperty(auto_now_add = True)
     last_modified = db.DateTimeProperty(auto_now = True)
+    coords = db.GeoPtProperty()
 
     def render(self):
         self._render_text = self.content.replace('\n', '<br>')
@@ -134,7 +158,17 @@ class Post(db.Model):
 class BlogFront(BlogHandler):
     def get(self):
         posts = greetings = Post.all().order('-created')
-        self.render('front.html', posts = posts)
+        
+
+        posts = list(posts)
+
+        points = filter(None, (p.coords for p in posts))
+        
+        img_url = None
+        if points:
+            img_url = gmaps_img(points)   
+
+        self.render('front.html', posts = posts, img_url = img_url) 
 
 class PostPage(BlogHandler):
     def get(self, post_id):
@@ -150,6 +184,7 @@ class PostPage(BlogHandler):
 class NewPost(BlogHandler):
     def get(self):
         if self.user:
+            self.write(get_coords(repr(self.request.remote_addr)))
             self.render("newpost.html")
         else:
             self.redirect("/login")
@@ -163,6 +198,9 @@ class NewPost(BlogHandler):
 
         if subject and content:
             p = Post(parent = blog_key(), subject = subject, content = content)
+            coords = get_coords(self.request.remote_addr)
+            if(coords):
+                p.coords = coords
             p.put()
             self.redirect('/blog/%s' % str(p.key().id()))
         else:
@@ -171,17 +209,17 @@ class NewPost(BlogHandler):
 
 
 ###### Unit 2 HW's
-class Rot13(BlogHandler):
-    def get(self):
-        self.render('rot13-form.html')
-
-    def post(self):
-        rot13 = ''
-        text = self.request.get('text')
-        if text:
-            rot13 = text.encode('rot13')
-
-        self.render('rot13-form.html', text = rot13)
+#class Rot13(BlogHandler):
+ #   def get(self):
+#        self.render('rot13-form.html')
+#
+ #   def post(self):
+  #      rot13 = ''
+   #     text = self.request.get('text')
+    #    if text:
+     #       rot13 = text.encode('rot13')
+#
+ #       self.render('rot13-form.html', text = rot13)
 
 
 USER_RE = re.compile(r"^[a-zA-Z0-9_-]{3,20}$")
@@ -233,9 +271,9 @@ class Signup(BlogHandler):
     def done(self, *a, **kw):##Denna overridas av done functionerna nedan
         raise NotImplementedError
 
-class Unit2Signup(Signup):
-    def done(self):
-        self.redirect('/unit2/welcome?username=' + self.username)
+#class Unit2Signup(Signup):
+ #   def done(self):
+  #      self.redirect('/unit2/welcome?username=' + self.username)
 
 class Register(Signup):
     def done(self):
@@ -248,7 +286,7 @@ class Register(Signup):
             u = User.register(self.username, self.password, self.email)
             u.put()
 
-            self.login(u)#Denna sätter cookien.
+            self.login(u)#Denna placerar cookien.
             self.redirect('/blog')
 
 class Login(BlogHandler):
@@ -270,14 +308,14 @@ class Login(BlogHandler):
 class Logout(BlogHandler):
     def get(self):
         self.logout()
-        self.redirect('/signup')
+        self.redirect("/blog")
 
-class Unit3Welcome(BlogHandler):
-    def get(self):
-        if self.user:
-            self.render('welcome.html', username = self.user.name)
-        else:
-            self.redirect('/signup')
+#class Unit3Welcome(BlogHandler):
+#    def get(self):
+ #       if self.user:
+  #          self.render('welcome.html', username = self.user.name)
+   #     else:
+    #        self.redirect('/signup')
 
 class Welcome(BlogHandler):
     def get(self):
@@ -288,15 +326,13 @@ class Welcome(BlogHandler):
             self.redirect('/unit2/signup')
 
 app = webapp2.WSGIApplication([('/', MainPage),
-                               ('/unit2/rot13', Rot13),
-                               ('/unit2/signup', Unit2Signup),
-                               ('/unit2/welcome', Welcome),
+                              # ('/unit2/signup', Unit2Signup),
+                              # ('/unit2/welcome', Welcome),
                                ('/blog/?', BlogFront),
                                ('/blog/([0-9]+)', PostPage),
                                ('/blog/newpost', NewPost),
                                ('/signup', Register),
                                ('/login', Login),
                                ('/logout', Logout),
-                               ('/unit3/welcome', Unit3Welcome),
                                ],
                               debug=True)

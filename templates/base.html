@@ -3,16 +3,16 @@
 <head>
   <link type="text/css" rel="stylesheet" href="/static/main.css" />
 
-  <title>CS 253 Blog</title>
+  <title>My Blog!</title>
 </head>
 
 <body>
   <a href="/blog" class="main-title">
-    CS 253 Blog
+    my blog
   </a>
 
   <div class="login-area">
-    {% if user %}
+    {% if user %}~
       {{user.name}} (<a class="login-link" href="/logout">logout</a>)
     {% else %}
       <a class="login-link" href="/login">login</a>
@@ -20,11 +20,12 @@
       <a class="login-link" href="/signup">signup</a>
     {% endif %}
   </div>
-
+  {% if user %}
   <div id="content">
   {% block content %}
   {% endblock %}
   </div>
+  {% endif %}
 </body>
 
 </html>
