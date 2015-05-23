@@ -3,14 +3,14 @@
 {% block content %}
   <h2>New Post</h2>
 
-    <form method="post">
+    <form method="post" action="#">
       <label>
         <div>Subject</div>
         <input type="text" name="subject" value="{{subject}}">
       </label>
 
       <label>
-        <div>Blog</div>
+        <div ng-show="subject">Blog</div>
         <textarea name="content">{{content}}</textarea>
       </label>
 
@@ -23,8 +23,3 @@
 
 
 {% endblock %}
-<div class="knapp">
-    <form method="Post" action="/blog/newpost">
-      <Button type="Submit">New Post!</Button>
-    </form>
-  </div>

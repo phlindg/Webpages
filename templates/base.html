@@ -1,32 +1,74 @@
 <!DOCTYPE html>
-<html>
-<head>
-  <link type="text/css" rel="stylesheet" href="/static/main.css" />
+<html ng-app="app">
 
-  <title>My Blog!</title>
+<head>
+
+    <!-- Latest compiled and minified CSS -->
+    <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css">
+
+    <!-- jQuery library -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+
+    <!-- Latest compiled JavaScript -->
+    <script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>
+
+    <script type="text/javascript" src="/components/angular/angular.min.js"></script>
+    <script type="text/javascript" src="/components/angular/angular.js"></script>
+    <script type="text/javascript" src = "/components/bower_components/ngUpload/ng-upload.js"></script>
+     <script type="text/javascript" src="/components/bower_components/flow.js/dist/flow.js"></script>
+    <script type="text/javascript" src="/components/bower_components/ng-flow/dist/ng-flow-standalone.js"></script>
+
+    <script type="text/javascript" src="/static/js/hello.js"></script>
+    <script type="text/javascript" src="/static/js/appli.js"></script>
+    <link type="text/css" rel="stylesheet" href="/static/main.css" />
+
+    <title>My Blog!</title>
 </head>
 
 <body>
-  <a href="/blog" class="main-title">
+    <section class="tab">
+        <ul class="nav nav-tabs">
+            <li ng-class="{active: tab.isSet(1)}">
+                <a href="/blog" ng-click="tab.setTab(1)">Blog</a>
+            </li>
+            <li ng-class="{active: tab.isSet(2)}">
+                <a href="/blog/newpost" ng-click="tab.setTab(2)">Newpost</a>
+            </li>
+            <li ng-class="{active: tab.isSet(3)}">
+                <a href="/signup" ng-click="tab.setTab(3)">RANDOM STUFF</a>
+            </li>
+          
+        </ul>
+        <div  ng-show="tab.isSet(1)">
+            <h4>Hejsan</h4>
+            <blockquote>STUFF IS HERE</blockquote>
+        </div>
+        <div  ng-show="tab.isSet(2)">
+            <h4>123123</h4>
+            <blockquote>STUFF IS HERE</blockquote>
+        </div>
+        <div ng-show="tab.isSet(3)">
+            <h4>99999</h4>
+            <blockquote>STUFF IS HERE</blockquote>
+        </div>
+    </section>
+
+
+
+    <a href="/blog" class="main-title">
     my blog
   </a>
 
-  <div class="login-area">
-    {% if user %}~
-      {{user.name}} (<a class="login-link" href="/logout">logout</a>)
-    {% else %}
-      <a class="login-link" href="/login">login</a>
-      |
-      <a class="login-link" href="/signup">signup</a>
+    <div class="login-area">
+        {% if user %}~ {{user.name}} (<a class="login-link" href="/logout">logout</a>) {% else %}
+        <a class="login-link" href="/login">login</a> |
+        <a class="login-link" href="/signup">signup</a> {% endif %}
+    </div>
+    {% if user %}
+    <div id="content">
+        {% block content %} {% endblock %}
+    </div>
     {% endif %}
-  </div>
-  {% if user %}
-  <div id="content">
-  {% block content %}
-  {% endblock %}
-  </div>
-  {% endif %}
 </body>
 
 </html>
-

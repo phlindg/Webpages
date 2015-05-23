@@ -6,7 +6,6 @@ import hmac
 from string import letters
 import urllib2
 from xml.dom import minidom
-
 import webapp2
 import jinja2
 
@@ -17,7 +16,7 @@ jinja_env = jinja2.Environment(loader = jinja2.FileSystemLoader(template_dir),
                                autoescape = True)
 
 secret = 'awoop'
-IP_URL="http://api.hostip.info/?ip="
+
 
 GMAPS_URL = "http://maps.googleapis.com/maps/api/staticmap?size=380x263&sensor=false&"
 def gmaps_img(points):
@@ -25,7 +24,9 @@ def gmaps_img(points):
              for p in points)
     return GMAPS_URL + markers
 
+IP_URL="http://api.hostip.info/?ip="
 def get_coords(ip):
+    ip=""
     url = IP_URL + ip
     content = None
     try:
@@ -35,8 +36,8 @@ def get_coords(ip):
     if content:
         d = minidom.parseString(content)
         coords = d.getElementsByTagName("gml:coordinates")
-        if coords and coords[0].childnotes[0].nodeValue:
-            lon, lat = coords[0].childnoted[0].nodeValue.split(",")
+        if coords and coords[0].childNodes[0].nodeValue:
+            lon, lat = coords[0].childNodes[0].nodeValue.split(",")
             return db.GeoPt(lat ,lon)
 
 def render_str(template, **params):
@@ -184,7 +185,6 @@ class PostPage(BlogHandler):
 class NewPost(BlogHandler):
     def get(self):
         if self.user:
-            self.write(get_coords(repr(self.request.remote_addr)))
             self.render("newpost.html")
         else:
             self.redirect("/login")
@@ -207,6 +207,10 @@ class NewPost(BlogHandler):
             error = "subject and content, please!"
             self.render("newpost.html", subject=subject, content=content, error=error)
 
+#class MakeJSON(BlogHandler):
+ #   def get(self):
+#
+ #   def post(self):
 
 ###### Unit 2 HW's
 #class Rot13(BlogHandler):
@@ -324,6 +328,11 @@ class Welcome(BlogHandler):
             self.render('welcome.html', username = username)
         else:
             self.redirect('/unit2/signup')
+class Upload(BlogHandler):
+    def get(self):
+        bilden = self.request.get("avatar")
+        if(bilden):
+          self.render("newpost.html", bilden = bilden)
 
 app = webapp2.WSGIApplication([('/', MainPage),
                               # ('/unit2/signup', Unit2Signup),
@@ -334,5 +343,6 @@ app = webapp2.WSGIApplication([('/', MainPage),
                                ('/signup', Register),
                                ('/login', Login),
                                ('/logout', Logout),
+                               ("/uploads", Upload),
                                ],
-                              debug=True)
+                               debug=True)
